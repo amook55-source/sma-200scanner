@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 import plotly.graph_objects as go
+import urllib.request
 
 st.set_page_config(
     page_title="Escáner SMA 200",
@@ -12,10 +13,9 @@ st.set_page_config(
 st.title("📈 Escáner Bursátil - Proximidad a la Media de 200 Días")
 st.markdown("Analiza en tiempo real qué acciones del S&P 500 cotizan más cerca de su media móvil de 200 períodos.")
 
-    @st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600)
 def obtener_tickers_sp500():
     try:
-        import urllib.request
         url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         html = urllib.request.urlopen(req).read()
@@ -24,7 +24,6 @@ def obtener_tickers_sp500():
         return df['Symbol'].str.replace('.', '-', regex=False).tolist()
     except Exception:
         return ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "BRK-B", "JPM", "V"]
-
 
 @st.cache_data(ttl=18000)
 def descargar_y_calcular_sma(tickers):
@@ -85,7 +84,6 @@ with st.spinner("Descargando y analizando acciones en tiempo real..."):
     df_todos = descargar_y_calcular_sma(tickers)
 
 if not df_todos.empty:
-    # Filtrar según controles
     mask = (df_todos["Distancia (%)"] >= rango_distancia[0]) & (df_todos["Distancia (%)"] <= rango_distancia[1])
     if posicion_filtro == "Por Encima (ABOVE)":
         mask = mask & (df_todos["Posición"] == "ABOVE")
@@ -94,7 +92,6 @@ if not df_todos.empty:
         
     df_res = df_todos[mask].sort_values(by="Distancia (%)", ascending=True)
 
-    # Métricas
     col1, col2, col3 = st.columns(3)
     col1.metric("Acciones Encontradas", len(df_res))
     col2.metric("Más Cercana", df_res.iloc[0]['Ticker'] if not df_res.empty else "N/A")
